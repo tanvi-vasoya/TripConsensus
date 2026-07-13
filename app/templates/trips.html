@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}
+My Trips
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-5">
+
+        <div>
+
+            <h1 class="fw-bold">
+
+                ✈️ My Trips
+
+            </h1>
+
+            <p class="text-muted mb-0">
+
+                Continue planning your trips, generate AI suggestions and vote with your group.
+
+            </p>
+
+        </div>
+
+        <a
+            href="/create-trip"
+            class="btn btn-primary rounded-pill px-4"
+        >
+
+            <i class="bi bi-plus-circle me-2"></i>
+
+            New Trip
+
+        </a>
+
+    </div>
+
+    {% if trips %}
+
+    <div class="row g-4">
+
+        {% for item in trips %}
+
+        <div class="col-lg-6">
+
+            <div class="card shadow-sm border-0 h-100">
+
+                <div class="card-body p-4">
+
+                    <!-- Header -->
+
+                    <div class="d-flex justify-content-between align-items-start">
+
+                        <div>
+
+                            <h3 class="fw-bold mb-2">
+
+                                {{ item.trip.title }}
+
+                            </h3>
+
+                            <p class="text-muted mb-0">
+
+                                {{ item.trip.description }}
+
+                            </p>
+
+                        </div>
+
+                        <!-- Status Badge -->
+
+                        {% if item.completed < item.participants %}
+
+                            <span class="badge bg-warning text-dark">
+
+                                Survey Pending
+
+                            </span>
+
+                        {% elif item.trip.status.value == "PLANNING" %}
+
+                            <span class="badge bg-info">
+
+                                Ready For AI
+
+                            </span>
+
+                        {% elif item.trip.status.value == "VOTING" %}
+
+                            <span class="badge bg-success">
+
+                                Voting
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-primary">
+
+                                Completed
+
+                            </span>
+
+                        {% endif %}
+
+                    </div>
+
+                    <hr>
+
+                    <!-- Participants -->
+
+                    <div class="d-flex justify-content-between mb-3">
+
+                        <span>
+
+                            👥 Participants
+
+                        </span>
+
+                        <strong>
+
+                            {{ item.participants }}
+
+                        </strong>
+
+                    </div>
+
+                    <!-- Survey -->
+
+                    <div class="d-flex justify-content-between">
+
+                        <span>
+
+                            📋 Survey Progress
+
+                        </span>
+
+                        <strong>
+
+                            {{ item.completed }}/{{ item.participants }}
+
+                        </strong>
+
+                    </div>
+
+                    {% set percent = (item.completed * 100 / item.participants) if item.participants else 0 %}
+
+                    <div class="progress mt-2 mb-4" style="height:10px;">
+
+                        <div
+                            class="progress-bar bg-success"
+                            role="progressbar"
+                            style="--progress: {{ percent }}%; width: var(--progress);"
+                        >
+
+                        </div>
+
+                    </div>
+
+                    <!-- Buttons -->
+
+                    <div class="d-grid gap-2">
+
+                        <a
+                            href="/trip/{{ item.trip.id }}"
+                            class="btn btn-outline-primary"
+                        >
+
+                            Continue Trip
+
+                        </a>
+
+                        {% if item.completed < item.participants %}
+
+                            <button
+                                class="btn btn-secondary"
+                                disabled
+                            >
+
+                                ⏳ Waiting For Survey Responses
+
+                            </button>
+
+                        {% elif item.trip.status.value == "PLANNING" %}
+
+                            <a
+                                href="/trip/{{ item.trip.id }}"
+                                class="btn btn-primary"
+                            >
+
+                                🤖 Generate AI Suggestions
+
+                            </a>
+
+                        {% elif item.trip.status.value == "VOTING" %}
+
+                            <a
+                                href="/trip/{{ item.trip.id }}/vote"
+                                class="btn btn-success"
+                            >
+
+                                🗳 Vote Now
+
+                            </a>
+
+                        {% else %}
+
+                            <a
+                                href="/trip/{{ item.trip.id }}/suggested-trip"
+                                class="btn btn-warning"
+                            >
+
+                                ✨ View Suggested Trip
+
+                            </a>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    {% else %}
+
+    <div class="text-center py-5">
+
+        <i class="bi bi-map display-1 text-primary"></i>
+
+        <h2 class="mt-4">
+
+            No Trips Yet
+
+        </h2>
+
+        <p class="text-muted">
+
+            Create your first collaborative trip to get started.
+
+        </p>
+
+        <a
+            href="/create-trip"
+            class="btn btn-primary rounded-pill px-4"
+        >
+
+            Create Your First Trip
+
+        </a>
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

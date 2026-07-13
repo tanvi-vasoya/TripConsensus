@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}
+AI Trip Planner
+{% endblock %}
+
+{% block content %}
+
+
+<!-- ===================================================== -->
+<!-- HERO -->
+<!-- ===================================================== -->
+
+<section class="hero">
+
+    <div class="container">
+
+        <div class="row align-items-center gy-5">
+
+            <div class="col-lg-6">
+
+                <h1 class="hero-title">
+
+                    Where Should We Go...
+
+                </h1>
+
+                <h1 class="hero-title">
+
+                    Plan Group Trips
+                    <br>
+                    Smarter With AI
+
+                </h1>
+
+                <p class="hero-description">
+
+                    AI-powerd planning that picks the perfect date,destination,
+                    and activities for your crew...
+
+                </p>
+
+                <div class="hero-buttons">
+
+                    <a
+                        href="/create-trip"
+                        class="btn btn-primary btn-lg"
+                    >
+
+                        <i class="bi bi-plus-circle me-2"></i>
+
+                        Start Planning
+
+                    </a>
+
+                    <!-- <a
+                        href="#features"
+                        class="btn btn-outline-primary btn-lg ms-3"
+                    >
+
+                        Learn More
+
+                    </a> -->
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-6 text-center">
+
+                <img
+                    src="/static/image/trip.png"
+                    class="hero-image img-fluid"
+                    alt="Travel Illustration"
+                >
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- ===================================================== -->
+<!-- HOW IT WORKS -->
+<!-- ===================================================== -->
+
+<section class="workflow-section">
+
+    <div class="container">
+
+        <div class="text-center mb-5">
+
+            <!-- <span class="section-badge">
+
+                HOW IT WORKS
+
+            </span> -->
+
+            <h2 class="section-title">
+
+                Plan Group Trips
+                <br>
+                In 3 Simple Steps...
+
+            </h2>
+
+            <!-- <p class="section-description">
+
+                Invite your friends, collect everyone's preferences,
+                and let AI help your group reach the perfect destination.
+
+            </p> -->
+
+        </div>
+
+        <!-- STEP 1 -->
+
+        <div class="row align-items-center workflow-item">
+
+            <div class="col-lg-6">
+
+                <div class="step-number orange">
+
+                    01
+
+                </div>
+
+                <h2>
+
+                    Create Your Trip
+
+                </h2>
+
+                <p>
+
+                    Create a new trip, choose the organizer, add participants, and prepare your travel 
+                    plan in less than a minute.
+
+                </p>
+
+            </div>
+            <div class="col-lg-6 text-center">
+
+                <img
+                    src="/static/image/destination.png"
+                    class="workflow-image img-fluid"
+                    alt="Create Trip"
+                >
+
+            </div>
+
+        </div>
+
+        <!-- STEP 2 -->
+
+        <div class="row align-items-center workflow-item flex-lg-row-reverse">
+
+            <div class="col-lg-6">
+
+                <div class="step-number green">
+
+                    02
+
+                </div>
+
+                <h2>
+
+                    Collect Preferences
+
+                </h2>
+
+                <p>
+
+                    Participants receive SMS surveys,
+                    submit their budgets,
+                    travel dates,
+                    activities,
+                    and accommodation preferences.
+
+                </p>
+
+            </div>
+
+            <div class="col-lg-6 text-center">
+
+                <img
+                    src="/static/image/car.png"
+                    class="workflow-image img-fluid"
+                    alt="Survey"
+                >
+
+            </div>
+
+        </div>
+
+        <!-- STEP 3 -->
+
+        <div class="row align-items-center workflow-item">
+
+            <div class="col-lg-6">
+
+                <div class="step-number orange">
+
+                    03
+
+                </div>
+
+                <h2>
+
+                    AI Suggests The Perfect Trip
+
+                </h2>
+
+                <p>
+
+                    AI powerded palnning that picks the perfect data,
+                    destination, and activities for your crew in 
+                    minutes...
+
+                </p>
+
+            </div>
+
+            <div class="col-lg-6 text-center">
+
+                <img
+                    src="/static/image/selfie.png"
+                    class="workflow-image img-fluid"
+                    alt="AI Recommendation"
+                >
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+<!-- ===================================================== -->
+<!-- CALL TO ACTION -->
+<!-- ===================================================== -->
+
+<section class="cta-section">
+
+    <div class="container">
+
+        <div class="cta-box">
+
+            <div class="row align-items-center">
+
+                <div class="col-lg-8">
+
+                    <span class="section-badge">
+
+                        READY TO START?
+
+                    </span>
+
+                    <h2 class="mt-3">
+
+                        Start Planning Your Next
+                        Adventure Today
+
+                    </h2>
+
+                    <p>
+
+                        Create your trip in minutes.....
+
+                    </p>
+
+                </div>
+
+                <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
+
+                    <a
+                        href="/create-trip"
+                        class="btn btn-light btn-lg"
+                    >
+
+                        <i class="bi bi-rocket-takeoff me-2"></i>
+
+                        Start Planning
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}
+

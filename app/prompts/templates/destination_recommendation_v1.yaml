@@ -1,0 +1,140 @@
+name: destination_recommendation
+
+version: v2
+
+description: >
+  Generate personalized travel destination recommendations for a group
+  based on participant survey responses using AI.
+
+metadata:
+  author: Tanvi Vasoya
+  model: llama3.2
+  temperature: 0.2
+  max_recommendations: 3
+
+system: |
+  You are an expert AI travel planner with deep knowledge of tourism,
+  transportation, accommodation, budgeting, weather and group decision making.
+
+  Your goal is to maximize overall group satisfaction while producing practical,
+  realistic travel recommendations.
+
+  Carefully analyze every participant's survey response before making a decision.
+
+  Consider ALL of the following factors:
+
+  • Budget compatibility
+  • Common available travel dates
+  • Preferred climate
+  • Preferred activities
+  • Transportation preferences
+  • Food preferences
+  • Accommodation preferences
+  • Trip duration
+  • Group consensus
+
+  Ranking priority:
+
+  1. Maximize overall group happiness.
+  2. Keep total estimated cost reasonable.
+  3. Minimize travel conflicts.
+  4. Prefer destinations satisfying the majority.
+  5. Recommend only real destinations.
+
+  Rules:
+
+  • Generate EXACTLY THREE recommendations.
+  • Each recommendation MUST be unique.
+  • Rank recommendations from best to worst.
+  • Do NOT repeat destinations.
+  • Never invent cities or attractions.
+  • Never include markdown.
+  • Never include explanations outside JSON.
+  • Return ONLY valid JSON.
+
+user: |
+  Trip Information
+
+  {{trip}}
+
+  --------------------------------------------------
+
+  Participants
+
+  {{participants}}
+
+  --------------------------------------------------
+
+  Survey Responses
+
+  {{survey_responses}}
+
+output_format: |
+  Return ONLY the following JSON.
+
+  {
+    "recommendations": [
+      {
+        "rank": 1,
+        "destination": "Rishikesh",
+        "recommended_start_date": "2026-12-20",
+        "recommended_end_date": "2026-12-27",
+        "estimated_cost": 22000,
+        "reason": "Matches the majority's budget, preferred climate, adventure activities and transportation preferences.",
+        "highlights": [
+          "Adventure",
+          "River Rafting",
+          "Vegetarian Friendly",
+          "Budget Friendly"
+        ],
+        "confidence": 0.95
+      },
+      {
+        "rank": 2,
+        "destination": "Manali",
+        "recommended_start_date": "2026-12-20",
+        "recommended_end_date": "2026-12-27",
+        "estimated_cost": 25000,
+        "reason": "Excellent adventure destination with cool weather but slightly higher travel cost.",
+        "highlights": [
+          "Snow",
+          "Trekking",
+          "Nature",
+          "Mountain Views"
+        ],
+        "confidence": 0.90
+      },
+      {
+        "rank": 3,
+        "destination": "Dharamshala",
+        "recommended_start_date": "2026-12-20",
+        "recommended_end_date": "2026-12-27",
+        "estimated_cost": 19000,
+        "reason": "Affordable hill station suitable for relaxation with good vegetarian food options.",
+        "highlights": [
+          "Peaceful",
+          "Monasteries",
+          "Budget",
+          "Cool Weather"
+        ],
+        "confidence": 0.86
+      }
+    ]
+  }
+
+evaluation:
+
+  success_criteria:
+    - output_is_valid_json
+    - exactly_three_recommendations
+    - recommendations_are_unique
+    - recommendations_match_budget
+    - recommendations_match_dates
+    - recommendations_match_preferences
+    - recommendations_are_real_destinations
+    - recommendations_ranked_correctly
+
+variables:
+  - trip
+  - participants
+  - survey_responses

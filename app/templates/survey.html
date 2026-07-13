@@ -1,0 +1,842 @@
+{% extends "base.html" %}
+
+{% block title %}
+Trip Survey
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+
+    <div class="col-lg-9">
+
+        <div class="card shadow border-0 rounded-4">
+
+            <div class="card-body p-5">
+
+                <div class="text-center mb-5">
+
+                    <h1 class="fw-bold">
+
+                        🌍 AI Trip Planner
+
+                    </h1>
+
+                    <p class="text-muted fs-5">
+
+                        Complete this short survey so our AI can recommend
+                        the perfect destination for your group.
+
+                    </p>
+
+                </div>
+
+                <div class="alert alert-primary border-0 rounded-4">
+
+                    <h3 class="mb-3">
+
+                        👋 Hi {{ participant.name }}
+
+                    </h3>
+
+                    <p class="mb-2">
+
+                        Thank you for joining
+
+                        <strong>{{ participant.trip.title }}</strong>
+
+                    </p>
+
+                    <p class="mb-0">
+
+                        This survey takes less than
+                        <strong>2 minutes</strong> to complete.
+
+                    </p>
+
+                </div>
+
+                <form
+                    id="surveyForm"
+                    method="POST"
+                    action="/survey/{{ participant.id }}"
+                >
+
+                    <!-- ====================================== -->
+                    <!-- Budget -->
+                    <!-- ====================================== -->
+
+                    <div class="card mt-4">
+
+                        <div class="card-body">
+
+                            <h4>
+
+                                💰 Budget
+
+                            </h4>
+
+                            <p class="text-muted">
+
+                                Approximate budget per person.
+
+                            </p>
+
+                            <input
+                                class="form-control form-control-lg"
+                                type="number"
+                                name="budget_per_person"
+                                placeholder="e.g. 15000"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+                    <!-- ====================================== -->
+                    <!-- Dates -->
+                    <!-- ====================================== -->
+
+                    <div class="card mt-4">
+
+                        <div class="card-body">
+
+                            <h4>
+
+                                📅 Travel Dates
+
+                            </h4>
+
+                            <div class="row mt-3">
+
+                                <div class="col-md-6">
+
+                                    <label class="form-label">
+
+                                        Available From
+
+                                    </label>
+
+                                    <input
+                                        id="available_from"
+                                        class="form-control"
+                                        type="date"
+                                        name="available_from"
+                                        required
+                                    >
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <label class="form-label">
+
+                                        Available To
+
+                                    </label>
+
+                                    <input
+                                        id="available_to"
+                                        class="form-control"
+                                        type="date"
+                                        name="available_to"
+                                        required
+                                    >
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ====================================== -->
+                    <!-- Climate -->
+                    <!-- ====================================== -->
+
+                    <div class="card mt-4">
+
+                        <div class="card-body">
+
+                            <h4>
+
+                                🌤 Preferred Climate
+
+                            </h4>
+
+                            <p class="text-muted">
+
+                                Select all that you enjoy.
+
+                            </p>
+
+                            <div class="row">
+
+                                <div class="col-md-6">
+
+                                    <div class="form-check">
+
+                                        <input
+                                            class="form-check-input"
+                                            type="checkbox"
+                                            name="preferred_climates"
+                                            value="Tropical"
+                                        >
+
+                                        <label class="form-check-label">
+
+                                            Tropical
+
+                                        </label>
+
+                                    </div>
+
+                                    <div class="form-check">
+
+                                        <input
+                                            class="form-check-input"
+                                            type="checkbox"
+                                            name="preferred_climates"
+                                            value="Moderate"
+                                        >
+
+                                        <label class="form-check-label">
+
+                                            Moderate
+
+                                        </label>
+
+                                    </div>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <div class="form-check">
+
+                                        <input
+                                            class="form-check-input"
+                                            type="checkbox"
+                                            name="preferred_climates"
+                                            value="Cold"
+                                        >
+
+                                        <label class="form-check-label">
+
+                                            Cold
+
+                                        </label>
+
+                                    </div>
+
+                                    <div class="form-check">
+
+                                        <input
+                                            class="form-check-input"
+                                            type="checkbox"
+                                            name="preferred_climates"
+                                            value="Snow"
+                                        >
+
+                                        <label class="form-check-label">
+
+                                            Snow
+
+                                        </label>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- ====================================== -->
+                    <!-- Activities -->
+                    <!-- ====================================== -->
+
+                    <div class="card mt-4">
+
+                        <div class="card-body">
+
+                            <h4>
+
+                                🎯 Activities
+
+                            </h4>
+
+                            <p class="text-muted">
+
+                                Select all that interest you.
+
+                            </p>
+
+                            <div class="row">
+
+                                <div class="col-md-6">
+
+    <div class="form-check">
+
+        <input
+            class="form-check-input"
+            type="checkbox"
+            name="preferred_activities"
+            value="Beach"
+        >
+
+        <label class="form-check-label">
+
+            Beach
+
+        </label>
+
+    </div>
+
+    <div class="form-check">
+
+        <input
+            class="form-check-input"
+            type="checkbox"
+            name="preferred_activities"
+            value="Adventure"
+        >
+
+        <label class="form-check-label">
+
+            Adventure
+
+        </label>
+
+    </div>
+
+    <div class="form-check">
+
+        <input
+            class="form-check-input"
+            type="checkbox"
+            name="preferred_activities"
+            value="Trekking"
+        >
+
+        <label class="form-check-label">
+
+            Trekking
+
+        </label>
+
+    </div>
+
+    <div class="form-check">
+
+        <input
+            class="form-check-input"
+            type="checkbox"
+            name="preferred_activities"
+            value="Nature"
+        >
+
+        <label class="form-check-label">
+
+            Nature
+
+        </label>
+
+    </div>
+
+</div>
+
+<div class="col-md-6">
+
+    <div class="form-check">
+
+        <input
+            class="form-check-input"
+            type="checkbox"
+            name="preferred_activities"
+            value="Nightlife"
+        >
+
+        <label class="form-check-label">
+
+            Nightlife
+
+        </label>
+
+    </div>
+
+    <div class="form-check">
+
+        <input
+            class="form-check-input"
+            type="checkbox"
+            name="preferred_activities"
+            value="Culture"
+        >
+
+        <label class="form-check-label">
+
+            Culture
+
+        </label>
+
+    </div>
+
+    <div class="form-check">
+
+        <input
+            class="form-check-input"
+            type="checkbox"
+            name="preferred_activities"
+            value="Photography"
+        >
+
+        <label class="form-check-label">
+
+            Photography
+
+        </label>
+
+    </div>
+
+    <div class="form-check">
+
+        <input
+            class="form-check-input"
+            type="checkbox"
+            name="preferred_activities"
+            value="Shopping"
+        >
+
+        <label class="form-check-label">
+
+            Shopping
+
+        </label>
+
+    </div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- ====================================== -->
+<!-- Food -->
+<!-- ====================================== -->
+
+<div class="card mt-4">
+
+    <div class="card-body">
+
+        <h4>
+
+            🍕 Food Preference
+
+        </h4>
+
+        <p class="text-muted">
+
+            Choose one option.
+
+        </p>
+
+        <div class="form-check">
+
+            <input
+                class="form-check-input"
+                type="radio"
+                name="food_preferences"
+                value="Vegetarian"
+                required
+            >
+
+            <label class="form-check-label">
+
+                Vegetarian
+
+            </label>
+
+        </div>
+
+        <div class="form-check">
+
+            <input
+                class="form-check-input"
+                type="radio"
+                name="food_preferences"
+                value="Vegan"
+            >
+
+            <label class="form-check-label">
+
+                Vegan
+
+            </label>
+
+        </div>
+
+        <div class="form-check">
+
+            <input
+                class="form-check-input"
+                type="radio"
+                name="food_preferences"
+                value="Non-Vegetarian"
+            >
+
+            <label class="form-check-label">
+
+                Non-Vegetarian
+
+            </label>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ====================================== -->
+<!-- Transport -->
+<!-- ====================================== -->
+
+<div class="card mt-4">
+
+    <div class="card-body">
+
+        <h4>
+
+            ✈ Preferred Transport
+
+        </h4>
+
+        <div class="row">
+
+            <div class="col-md-4">
+
+                <div class="form-check">
+
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="transport_preferences"
+                        value="Flight"
+                    >
+
+                    <label class="form-check-label">
+
+                        Flight
+
+                    </label>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <div class="form-check">
+
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="transport_preferences"
+                        value="Train"
+                    >
+
+                    <label class="form-check-label">
+
+                        Train
+
+                    </label>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-4">
+
+                <div class="form-check">
+
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="transport_preferences"
+                        value="Car"
+                    >
+
+                    <label class="form-check-label">
+
+                        Car
+
+                    </label>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ====================================== -->
+<!-- Accommodation -->
+<!-- ====================================== -->
+
+<div class="card mt-4">
+
+    <div class="card-body">
+
+        <h4>
+
+            🏨 Accommodation
+
+        </h4>
+
+        <div class="row">
+
+            <div class="col-md-6">
+
+                <div class="form-check">
+
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="accommodation_preferences"
+                        value="Hotel"
+                    >
+
+                    <label class="form-check-label">
+
+                        Hotel
+
+                    </label>
+
+                </div>
+
+                <div class="form-check">
+
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="accommodation_preferences"
+                        value="Resort"
+                    >
+
+                    <label class="form-check-label">
+
+                        Resort
+
+                    </label>
+
+                </div>
+
+            </div>
+
+            <div class="col-md-6">
+
+                <div class="form-check">
+
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="accommodation_preferences"
+                        value="Hostel"
+                    >
+
+                    <label class="form-check-label">
+
+                        Hostel
+
+                    </label>
+
+                </div>
+
+                <div class="form-check">
+
+                    <input
+                        class="form-check-input"
+                        type="checkbox"
+                        name="accommodation_preferences"
+                        value="Airbnb"
+                    >
+
+                    <label class="form-check-label">
+
+                        Airbnb
+
+                    </label>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ====================================== -->
+<!-- Notes -->
+<!-- ====================================== -->
+
+<div class="card mt-4">
+
+    <div class="card-body">
+
+        <h4>
+
+            📝 Additional Notes
+
+        </h4>
+
+        <textarea
+            class="form-control"
+            rows="5"
+            name="additional_notes"
+            placeholder="Anything else you'd like us to know?"
+        ></textarea>
+
+    </div>
+
+</div>
+
+<div class="text-center mt-5">
+
+    <button
+        class="btn btn-primary btn-lg px-5"
+        type="submit"
+    >
+
+        🚀 Submit Survey
+
+    </button>
+
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+<script>
+
+document.getElementById(
+    "surveyForm",
+).addEventListener(
+    "submit",
+    function (event) {
+
+        const from =
+            document.getElementById(
+                "available_from",
+            ).value;
+
+        const to =
+            document.getElementById(
+                "available_to",
+            ).value;
+
+        if (!from || !to) {
+            return;
+        }
+
+        const fromDate = new Date(from);
+        const toDate = new Date(to);
+
+        if (fromDate > toDate) {
+
+            event.preventDefault();
+
+            alert(
+                "Available From must be before or equal to Available To."
+            );
+
+            return;
+        }
+        if (
+            document.querySelectorAll(
+                'input[name="preferred_climates"]:checked',
+            ).length === 0
+        ) {
+
+            event.preventDefault();
+
+            alert(
+                "Please select at least one climate.",
+            );
+
+            return;
+
+        }
+
+        if (
+            document.querySelectorAll(
+                'input[name="preferred_activities"]:checked',
+            ).length === 0
+        ) {
+
+            event.preventDefault();
+
+            alert(
+                "Please select at least one activity.",
+            );
+
+            return;
+
+        }
+
+        if (
+            document.querySelectorAll(
+                'input[name="transport_preferences"]:checked',
+            ).length === 0
+        ) {
+
+            event.preventDefault();
+
+            alert(
+                "Please select at least one transport option.",
+            );
+
+            return;
+
+        }
+
+        if (
+            document.querySelectorAll(
+                'input[name="accommodation_preferences"]:checked',
+            ).length === 0
+        ) {
+
+            event.preventDefault();
+
+            alert(
+                "Please select at least one accommodation.",
+            );
+
+            return;
+
+        }
+
+    },
+);
+
+</script>
+
+
+{% endblock %}

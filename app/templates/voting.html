@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}
+Group Decision
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <!-- Header -->
+
+    <div class="text-center mb-5">
+
+        <span class="badge bg-primary px-3 py-2 mb-3">
+
+            Final Step
+
+        </span>
+
+        <h1 class="fw-bold">
+
+            🗳 Group Decision
+
+        </h1>
+
+        <p class="text-muted">
+
+            Every participant ranks the AI suggested destinations.
+            The final destination is selected using Ranked Choice Voting.
+
+        </p>
+
+    </div>
+
+    <!-- Voting Card -->
+
+    <div class="card shadow-sm border-0">
+
+        <div class="card-body p-4">
+
+            <!-- Participant -->
+
+            <div class="mb-4">
+
+                <label class="form-label fw-bold">
+
+                    <i class="bi bi-person-circle"></i>
+
+                    Select Participant
+
+                </label>
+
+                <select
+                    id="participant-select"
+                    class="form-select"
+                >
+
+                    <option value="">
+
+                        Choose your name
+
+                    </option>
+
+                </select>
+
+            </div>
+
+            <hr>
+
+            <!-- Instructions -->
+
+            <div class="alert alert-info border-0">
+
+                <i class="bi bi-info-circle-fill"></i>
+
+                Rank each destination only once.
+
+                <br>
+
+                <small>
+
+                    1 = Most Preferred • Higher numbers = Lower Preference
+
+                </small>
+
+            </div>
+
+            <!-- AI Suggestions -->
+
+            <h4 class="fw-bold mb-4">
+
+                <i class="bi bi-stars text-primary"></i>
+
+                AI Suggested Destinations
+
+            </h4>
+
+            <div id="recommendation-list">
+
+                <div class="text-center p-5">
+
+                    <div
+                        class="spinner-border text-primary mb-3"
+                        role="status"
+                    >
+                    </div>
+
+                    <p class="text-muted">
+
+                        Loading AI suggestions...
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Buttons -->
+
+    <div class="d-flex justify-content-between mt-4">
+
+        <a
+            href="/"
+            class="btn btn-outline-secondary"
+        >
+
+            <i class="bi bi-arrow-left"></i>
+
+            Dashboard
+
+        </a>
+
+        <button
+            id="submit-vote"
+            class="btn btn-success px-5"
+        >
+
+            <i class="bi bi-check-circle-fill"></i>
+
+            Submit Vote
+
+        </button>
+
+    </div>
+
+</div>
+
+<script src="/static/js/voting.js"></script>
+
+{% endblock %}
