@@ -11,7 +11,7 @@ TripConsensus helps a group of friends/family plan a trip together: each partici
 
 ```
                     ┌──────────────────────┐
-                    │   Participants (web)  │
+                    │   Participants (web) │
                     └──────────┬───────────┘
                                │ HTTP
                                ▼
