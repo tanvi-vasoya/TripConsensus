@@ -23,7 +23,7 @@ from app.api.votes import router as vote_router
 from app.api.survey import router as survey_router
 from app.utils.logging import logger
 
-
+# Automatically create tables on application startup.
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -44,10 +44,7 @@ app.include_router(recommendation_router)
 app.include_router(vote_router)
 app.include_router(survey_router)
 app.include_router(web_router)
-app.include_router(
-    trip_router,
-    prefix="/api",
-)
+app.include_router(trip_router,prefix="/api",)
 
 
 @app.get("/health")
