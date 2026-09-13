@@ -1,62 +1,27 @@
 from uuid import UUID
-
 from sqlalchemy.orm import Session
-
 from app.models.recommendation import Recommendation
 
-
 class RecommendationRepository:
-    """
-    Repository responsible for Recommendation database operations.
-    """
+    """Repository responsible for Recommendation database operations."""
 
-    def __init__(
-        self,
-        db: Session,
-    ) -> None:
-
+    def __init__(self,db: Session,) -> None:
         self.db = db
 
-    def create(
-        self,
-        recommendation: Recommendation,
-    ) -> Recommendation:
-        """
-        Create a new recommendation.
-        """
-
+    def create(self,recommendation: Recommendation) -> Recommendation:
+        """Create a new recommendation."""
         try:
-
-            self.db.add(
-                recommendation,
-            )
-
+            self.db.add(recommendation)
             self.db.flush()
-
-            self.db.refresh(
-                recommendation,
-            )
-
+            self.db.refresh(recommendation)
             return recommendation
-
         except Exception:
-
             self.db.rollback()
-
             raise
 
-    def get_by_id(
-        self,
-        recommendation_id: UUID,
-    ) -> Recommendation | None:
-        """
-        Retrieve a recommendation by its unique identifier.
-        """
-
-        return self.db.get(
-            Recommendation,
-            recommendation_id,
-        )
+    def get_by_id(self,recommendation_id: UUID) -> Recommendation | None:
+        """Retrieve a recommendation by its unique identifier."""
+        return self.db.get(Recommendation,recommendation_id)
 
     def get_all(
         self,
