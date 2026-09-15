@@ -1,262 +1,78 @@
 # TripConsensus
 
-**AI-powered collaborative trip planning platform** built with **FastAPI**, **PostgreSQL**, **Twilio**, **Ollama**, and **Ranked-Choice Voting**.
+TripConsensus is an end-to-end group trip planning web application. It collects each participant's travel preferences via SMS (and a web form), generates AI-based destination recommendations from those preferences using a fine-tuned Llama 3.1 model served through Ollama, and lets the group pick a final destination using Ranked-Choice Voting.
 
-TripConsensus helps a group of friends/family plan a trip together: each participant fills a short preference survey (budget, dates, climate, activities, food, transport, accommodation), an LLM (via Ollama/OpenAI/Anthropic) turns those preferences into destination recommendations, and the group ranks the recommendations using **Ranked-Choice Voting** to reach a consensus.
+**Tech stack:** FastAPI (backend framework), Pydantic (schema validation), SQLAlchemy (ORM), PostgreSQL (database), Twilio Python SDK (SMS), Ollama (LLM inference — fine-tuned Llama 3.1).
 
-
----
-
-## Architecture 
-
-```
-                    ┌──────────────────────┐
-                    │   Participants (web) │
-                    └──────────┬───────────┘
-                               │ HTTP
-                               ▼
-                    ┌──────────────────────┐
-                    │   FastAPI app (app/) │   <- app.main:app (assumed entrypoint)
-                    └──────────┬───────────┘
-                               │
-        ┌──────────────┬──────┴───────┬───────────────┐
-        ▼              ▼              ▼               ▼
-   Schemas         Repositories     Services        Gateway/AI
- (app/schemas)   (app/repositories) (app/services)  (app/gateway,
-   Pydantic         SQLAlchemy      business logic   app/prompts,
-   request/         data access     e.g. Recommend-  app/ai)
-   response         layer over      ationService     talks to
-   validation       Postgres                         Ollama / OpenAI /
-                                                       Anthropic
-        │              │                               │
-        ▼              ▼                               ▼
-   app/models  ───────────────────────────►   PostgreSQL (Docker: postgres:17)
-   (SQLAlchemy ORM: Trip, Participant,
-    SurveyResponse, Recommendation, Vote,
-    ModelUsage)
-
-   Redis (Docker: redis:7-alpine)  — caching / background task support
-   Twilio (twilio SDK)             — SMS notifications to participants
-```
-
-**Request flow for a recommendation (traced from `test_recommendation_pipeline.py` / `test_parser.py` / `test_recommendation_service.py`):**
-
-1. `TripRepository` / `SurveyRepository` pull the trip, its participants, and their survey responses from Postgres.
-2. `app/prompts/renderer.py` (`renderer.render(...)`) fills a prompt template (e.g. `"destination_recommendation"`) with trip + participant + survey data, producing a `system` / `user` / `output_format` prompt set.
-3. `app/gateway/gateway.py` (`Gateway.generate(...)`) sends the prompt to the configured LLM provider (Ollama locally, or OpenAI/Anthropic per `requirements.txt`) and returns the raw response.
-4. `app/ai/recommendation_parser.py` (`parser.parse(...)`) parses the raw AI response into structured recommendation data.
-5. `app/services/recommendation_service.py` (`RecommendationService.generate_recommendations(trip_id)`) orchestrates steps 1–4 and persists results via `RecommendationRepository`.
-6. Participants then vote on the resulting recommendations (`Vote` model / `VoteRepository`) using **Ranked-Choice Voting** to settle on a final destination.
+The project follows a layered architecture: **Schemas → Models → Repositories → Services → API → Main**, described below in that order.
 
 ---
 
-## Tech Stack
+## 1. `app/schemas/`
 
-| Layer | Technology |
-|---|---|
-| API framework | FastAPI (`fastapi`, `starlette`, `uvicorn`) |
-| Database | PostgreSQL 17 (`psycopg2-binary`, `SQLAlchemy`, `alembic` for migrations) |
-| Cache / queue | Redis 7 (`redis`, `fakeredis` for tests) |
-| Validation | Pydantic v2 (`pydantic`, `pydantic-settings`) |
-| AI providers | Ollama (local LLMs), OpenAI SDK, Anthropic SDK |
-| Messaging | Twilio (SMS notifications to participants) |
-| Auth-related | `passlib`, `bcrypt`, `python-jose`, `PyJWT` (present in dependencies) |
-| Testing | `pytest`, `pytest-asyncio`, `pytest-cov`, `freezegun`, `respx` |
-| Config | `python-dotenv` (`.env` file), `app/config.py` (`settings` object) |
+Pydantic schemas used for request validation and response serialization at the API boundary. These do not touch the database directly — they define what a client can send in and what the API sends back.
 
-Full pinned list is in [`requirements.txt`](./requirements.txt).
+- **`participant.py`** — `ParticipantCreate`, `ParticipantUpdate`, `ParticipantResponse`. Validates participant name, E.164-formatted phone number, and optional email.
+- **`trip.py`** — `TripCreate`, `TripUpdate`, `TripResponse`. Defines a trip's title/description, its organizer, and its list of participants.
+- **`survey_response.py`** — `SurveyResponseCreate`, `SurveyResponseUpdate`, `SurveyResponseResponse`. Captures budget, date availability, and preference lists (climate, activities, food, transport, accommodation), with a validator ensuring `available_from <= available_to`.
+- **`recommendation.py`** — `RecommendationCreate`, `RecommendationUpdate`, `RecommendationResponse`. Represents an AI-generated destination suggestion, including cost estimate, confidence score, and which model/prompt version produced it.
+- **`vote.py`** — `VoteCreate`, `VoteUpdate`, `VoteResponse`, `VotingResultResponse`. Represents a single ranked vote from a participant for a recommendation, and the final winner of an election.
 
----
+## 2. `app/models/`
 
-## Project Structure
+SQLAlchemy ORM classes. Each class maps to one PostgreSQL table and is created automatically on app startup.
 
-```
-TripConsensus/
-├── app/                              # Main application package (FastAPI)
-│   ├── database.py                   # SQLAlchemy Base, engine, SessionLocal
-│   ├── config.py                     # `settings` object (env-driven config, e.g. Twilio/SMS flags)
-│   ├── models/                       # SQLAlchemy ORM models
-│   │   ├── trip.py                   # Trip
-│   │   ├── participant.py            # Participant
-│   │   ├── survey_response.py        # SurveyResponse
-│   │   ├── recommendation.py         # Recommendation
-│   │   ├── vote.py                   # Vote
-│   │   └── model_usage.py            # ModelUsage
-│   ├── schemas/                      # Pydantic request/response schemas
-│   │   ├── trip.py                   # TripCreate
-│   │   ├── participant.py            # ParticipantCreate
-│   │   ├── survey_response.py        # SurveyResponseCreate
-│   │   ├── recommendation.py         # RecommendationCreate
-│   │   └── vote.py                   # VoteCreate
-│   ├── repositories/                 # Data-access layer (one repo per model)
-│   │   ├── trip_repository.py        # TripRepository
-│   │   ├── participant_repository.py # ParticipantRepository
-│   │   ├── survey_repository.py      # SurveyRepository
-│   │   ├── recommendation_repository.py # RecommendationRepository
-│   │   ├── vote_repository.py        # VoteRepository
-│   │   └── model_usage_repository.py # ModelUsageRepository
-│   ├── services/
-│   │   └── recommendation_service.py # RecommendationService   core business logic
-│   ├── gateway/
-│   │   └── gateway.py                # Gateway   unified AI-provider client
-│   ├── prompts/
-│   │   └── renderer.py               # renderer   prompt-template rendering
-│   ├── ai/
-│   │   └── recommendation_parser.py  # parser     parses raw AI output
-│   ├── routers/                      #  FastAPI route modules
-│   └── main.py                       # FastAPI app entrypoint
-├── scripts/                          # 
-├── create_tables.py                  # Creates all DB tables from the models
-├── docker-compose.yml                # Postgres 17 + Redis 7 services
-├── requirements.txt                  # Python dependencies
-├── test_config.py                    # 
-├── test_database.py                  # 
-├── test_db_types.py                  # 
-├── test_gateway.py                   # Manual  test for Gateway.generate()
-├── test_models.py                    # Sanity import-check for all ORM models
-├── test_parser.py                    # End-to-end: render → generate → parse
-├── test_recommendation_pipeline.py   # End-to-end: render → generate (raw output)
-├── test_recommendation_service.py    # End-to-end: RecommendationService.generate_recommendations()
-├── test_repositories.py              # Exercises create/read methods on every repository
-├── test_schemas.py                   # Sanity import-check for all Pydantic schemas
-└── test_twilio_config.py             # Prints Twilio-related settings
-```
+- **`trip.py`** — `Trip` table: title, description, final agreed dates, status (`TripStatus` enum), and relationships to participants, recommendations, and model usage records.
+- **`participant.py`** — `Participant` table: name, phone number, email, organizer flag, survey-completion flag, and current SMS survey question index. Related to a trip, its survey response, and its votes.
+- **`survey_response.py`** — `SurveyResponse` table: one participant's submitted preferences (budget, availability, climate/activity/food/transport/accommodation preferences stored as JSON lists).
+- **`recommendation.py`** — `Recommendation` table: one AI-generated destination suggestion for a trip, along with the model provider/name/prompt version used to generate it.
+- **`vote.py`** — `Vote` table: a participant's rank for a specific recommendation.
+- **`model_usage.py`** — `ModelUsage` table: logs AI usage per trip (provider, model, prompt version, token counts, response time, estimated cost).
+- **`enums.py`** — `TripStatus` enum: the lifecycle stages a trip moves through (`planning`, `survey`, `recommendations`, `voting`, `confirmed`, `completed`).
 
+## 3. `app/repositories/`
+
+The data-access layer. Each repository wraps direct SQLAlchemy queries for one model and exposes CRUD plus a few targeted lookup methods. No business logic lives here — only database reads/writes.
+
+- **`trip_repository.py`** — create/get/update/delete a trip; also `get_by_status` and `search_by_title`.
+- **`participant_repository.py`** — create/get/update/delete a participant; also `get_by_trip_id`, `get_organizers`, `get_by_phone_number`, `search_by_name`.
+- **`survey_repository.py`** — create/get/update/delete a survey response; also `get_by_participant_id`, `get_by_trip_id`, `get_by_budget_range`, `get_submitted_between`, `search_by_activity`.
+- **`recommendation_repository.py`** — create/get/update/delete a recommendation; also `get_by_trip_id`, `get_by_model`, `get_by_prompt_version`, `delete_by_trip_id`, `get_best_recommendation` (highest confidence score).
+- **`vote_repository.py`** — create/get/update/delete a vote; also `get_by_participant_id`, `get_by_recommendation_id`, `get_by_participant_and_recommendation`, `get_ranked_votes`.
+- **`model_usage_repository.py`** — create/get/update/delete a usage record; also `get_by_trip_id`, `get_by_provider`, `get_by_model`, `get_by_prompt_version`, `get_total_estimated_cost`.
+
+## 4. `app/services/`
+
+The business-logic layer. Services combine one or more repositories (and other services) to carry out an actual workflow. This is where things like validation rules, orchestration across tables, and calls to Twilio/the AI model happen.
+
+- **`trip_service.py`** — creates a trip along with its organizer and invited participants in a single transaction, then sends each of them an SMS invitation. Also handles fetching, updating, and deleting trips and reading a trip's organizer/participants.
+- **`survey_service.py`** — drives the SMS-based survey flow: starts the survey for a participant, processes each incoming SMS answer against `SurveyEngine`, validates it, saves it to the participant's `SurveyResponse` field by field, advances to the next question, and sends a thank-you message once complete.
+- **`web_survey_service.py`** — handles the same survey, but submitted in one shot through the web form instead of question-by-question over SMS.
+- **`sms_service.py`** — thin wrapper around the Twilio client that sends trip invitations, survey reminders, thank-you messages, and voting invitations.
+- **`recommendation_service.py`** — loads a trip and its collected survey responses, renders a prompt, sends it to the AI gateway (Ollama), parses the model's response into structured recommendations, and saves them (replacing any previous recommendations for that trip). Also exposes fetching and deleting recommendations.
+- **`voting_service.py`** — records ranked votes (rejecting duplicate votes from the same participant for the same recommendation), retrieves votes, and determines the final winner by converting stored votes into ranked ballots and running them through the `RankedChoiceVoting` algorithm.
+
+## 5. `app/api/`
+
+FastAPI routers — the HTTP endpoints exposed by the application. Each file wires a service into one or more routes and translates errors into HTTP responses.
+
+- **`trips.py`** (`/api/trips`) — `POST /` create a trip, `GET /` list all trips, `GET /{trip_id}` get one trip, `DELETE /{trip_id}` delete a trip.
+- **`survey.py`** (`/survey/{participant_id}`) — `GET` renders the web survey form, `POST` validates and submits the answers via `WebSurveyService`.
+- **`sms_webhook.py`** (`/sms/webhook`) — receives incoming SMS messages from Twilio (currently logs the payload; wiring it into `SurveyService.process_message` is a pending TODO in the code).
+- **`recommendations.py`** (`/recommendations`) — `POST /{trip_id}/generate` triggers AI recommendation generation for a trip, `GET /{trip_id}` fetches existing recommendations.
+- **`votes.py`** (`/votes`) — `POST /` cast a ranked vote, `GET /results/{trip_id}` get the IRV winner, `GET /{vote_id}` get one vote, `GET /recommendation/{recommendation_id}` get all votes for a recommendation, `DELETE /{vote_id}` delete a vote, `GET /` list all votes.
+
+## 6. `app/main.py`
+
+The application entry point. Creates the FastAPI app, imports every model so `Base.metadata.create_all()` can build all tables on startup, mounts the `/static` directory, and registers all routers (`trips`, `recommendations`, `votes`, `survey`, `sms_webhook`, plus the web/front-end router). Also exposes a `GET /health` endpoint.
+
+## 7. `app/database.py`
+
+Sets up the SQLAlchemy database layer: creates the `engine` from `settings.database_url` (PostgreSQL), configures `SessionLocal` as the session factory, defines the declarative `Base` class that all models inherit from, and provides the `get_db()` dependency that opens a new session per request and closes it afterward.
 
 ---
 
-## File-by-File Reference
+## Notes
 
-### Root scripts
-
-#### `create_tables.py`
-Imports the SQLAlchemy `Base` / `engine` from `app.database` and every model (`Trip`, `Participant`, `SurveyResponse`, `Recommendation`, `Vote`, `ModelUsage`), then runs `Base.metadata.create_all(bind=engine)` to create all tables in Postgres. Run this once after starting the database.
-
-### `app/database.py` *(inferred from imports)*
-- `Base` — SQLAlchemy declarative base, used by all ORM models.
-- `engine` — SQLAlchemy engine (Postgres connection).
-- `SessionLocal` — session factory used throughout repositories/services (`db = SessionLocal()`).
-
-### `app/config.py` *(inferred from imports)*
-- `settings` — a Pydantic-settings object loaded from environment variables (`.env`). Confirmed attributes: `enable_sms`, `twilio_account_sid`, `twilio_phone_number`. Almost certainly also holds DB URL, Redis URL, and AI-provider credentials.
-
-### `app/models/` — SQLAlchemy ORM models
-| File | Class | Notes |
-|---|---|---|
-| `trip.py` | `Trip` | Has `title`, `description`; related to `Participant`s, `Recommendation`s |
-| `participant.py` | `Participant` | Has `trip_id`, `name`, `phone_number`, `email`, `is_organizer` |
-| `survey_response.py` | `SurveyResponse` | Has `participant_id`, `budget_per_person`, `available_from`/`available_to`, `preferred_climates`, `preferred_activities`, `food_preferences`, `transport_preferences`, `accommodation_preferences`, `additional_notes` |
-| `recommendation.py` | `Recommendation` | Has `trip_id`, `destination`, `recommended_start_date`/`end_date`, `reason`, `estimated_cost`, `confidence_score`, `model_provider`, `model_name`, `prompt_version` |
-| `vote.py` | `Vote` | Has `participant_id`, `recommendation_id`, `rank` — the raw data behind Ranked-Choice Voting |
-| `model_usage.py` | `ModelUsage` | Has `trip_id`, `provider`, `model_name`, `prompt_version`, `input_tokens`, `output_tokens`, `response_time`, `estimated_cost` — tracks AI usage/cost |
-
-### `app/schemas/` — Pydantic schemas (API layer)
-`trip.py` (`TripCreate`), `participant.py` (`ParticipantCreate`), `survey_response.py` (`SurveyResponseCreate`), `recommendation.py` (`RecommendationCreate`), `vote.py` (`VoteCreate`) — request-validation models mirroring the ORM models above.
-
-### `app/repositories/` — data-access layer
-Each repository wraps a `db: Session` and exposes CRUD-style methods.
-
-| File | Class | Confirmed methods |
-|---|---|---|
-| `trip_repository.py` | `TripRepository` | `create()`, `exists(id)`, `get_by_id(id)`, `search_by_title(text)` |
-| `participant_repository.py` | `ParticipantRepository` | `create()`, `exists(id)`, `get_by_phone_number(phone)` |
-| `survey_repository.py` | `SurveyRepository` | `create()`, `exists(id)`, `get_by_participant_id(id)`, `get_by_trip_id(trip_id)` |
-| `recommendation_repository.py` | `RecommendationRepository` | `create()`, `exists(id)`, `get_best_recommendation(trip_id)` |
-| `vote_repository.py` | `VoteRepository` | `create()`, `exists(id)` |
-| `model_usage_repository.py` | `ModelUsageRepository` | `create()`, `exists(id)`, `get_total_estimated_cost()` |
-
-### `app/gateway/gateway.py` 
-- **`Gateway`** — unified client to the AI backends. Exposes `generate(system_prompt, user_prompt) -> response` (returns an object with a `.content` attribute). Backed by `ollama`, `openai`, and `anthropic` SDKs per `requirements.txt`, so it likely selects a provider based on `app.config.settings`.
-
-### `app/prompts/renderer.py` 
-- **`renderer`** — renders named prompt templates. Confirmed usage: `renderer.render("destination_recommendation", trip=..., participants=..., survey_responses=...)`, returning a dict with `system`, `user`, and optionally `output_format` keys.
-
-### `app/ai/recommendation_parser.py` 
-- **`parser`** — parses the raw LLM response object into structured recommendation data. Confirmed usage: `parser.parse(response)`.
-
-### `app/services/recommendation_service.py` 
-- **`RecommendationService`** — orchestrates the full pipeline. Constructed with `db`, `recommendation_repository`, `survey_repository`, `trip_repository`, `gateway`. Exposes `generate_recommendations(trip_id)`, which renders the prompt, calls the `Gateway`, parses the result, and (presumably) persists it via `RecommendationRepository`.
-
-### `app/main.py`, `app/routers/`, `scripts/` 
-Not directly reachable through automated browsing of this repo — GitHub returns a robots-disallowed response for folder/tree URLs. Based on the stack (FastAPI + the modules above), `app/main.py` is almost certainly the FastAPI app entrypoint (`app = FastAPI()`), wired to route modules under `app/routers/` for trips, participants, surveys, recommendations, and votes, plus a Twilio webhook/notification route. **Please add the real contents/paths here once verified.**
-
-### Test / smoke scripts (root level)
-These are **manual smoke-test scripts** (run directly with `python test_x.py`), not `pytest`-style test suites, despite `pytest` being a dependency:
-
-| File | What it does |
-|---|---|
-| `test_models.py` | Imports every ORM model to confirm they load without error |
-| `test_schemas.py` | Imports every Pydantic schema to confirm they load without error |
-| `test_repositories.py` | Creates a `Trip` → `Participant` → `SurveyResponse` → `Recommendation` → `Vote` → `ModelUsage` end-to-end and asserts each repository's methods work |
-| `test_gateway.py` | Calls `Gateway.generate()` directly with a hard-coded travel-recommendation prompt |
-| `test_recommendation_pipeline.py` | Loads a trip by hard-coded ID, renders the prompt, calls the gateway, prints the raw AI response |
-| `test_parser.py` | Same as above, plus runs the raw AI response through `recommendation_parser.parser.parse()` |
-| `test_recommendation_service.py` | Instantiates `RecommendationService` and calls `generate_recommendations(trip_id)` end-to-end |
-| `test_twilio_config.py` | Prints `settings.enable_sms`, `settings.twilio_account_sid`, `settings.twilio_phone_number` to verify Twilio config is loaded |
-| `test_config.py`, `test_database.py`, `test_db_types.py` |`app.config.settings` loading, DB connectivity, and custom SQLAlchemy column types respectively |
-
-### `docker-compose.yml`
-Spins up local infrastructure:
-- `postgres` — Postgres 17, container `tripplanner_postgres`, DB `tripplanner`, exposed on `5432`, with a persistent `postgres_data` volume.
-- `redis` — Redis 7 (alpine), container `tripplanner_redis`, exposed on `6379`.
-
----
-
-## Getting Started
-
-> The exact run command for the API (e.g. `uvicorn app.main:app --reload`) is **assumed** since `app/main.py` wasn't directly inspected — confirm/update once verified.
-
-1. **Clone the repo**
-   ```bash
-   git clone https://github.com/tanvi-vasoya/TripConsensus.git
-   cd TripConsensus
-   ```
-
-2. **Start infrastructure (Postgres + Redis)**
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Create a virtual environment and install dependencies**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate      # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-4. **Configure environment variables**
-   Create a `.env` file (loaded via `python-dotenv` / `app/config.py`). At minimum you'll need a Postgres connection URL matching `docker-compose.yml` (`postgresql://postgres:password@localhost:5432/tripplanner`), plus Twilio and AI-provider credentials, e.g.:
-   ```env
-   DATABASE_URL=postgresql://postgres:password@localhost:5432/tripplanner
-   REDIS_URL=redis://localhost:6379
-
-   ENABLE_SMS=false
-   TWILIO_ACCOUNT_SID=
-   TWILIO_AUTH_TOKEN=
-   TWILIO_PHONE_NUMBER=
-
-   # AI provider (Ollama / OpenAI / Anthropic — check app/config.py for exact var names)
-   OLLAMA_MODEL=llama3.2
-   OPENAI_API_KEY=
-   ANTHROPIC_API_KEY=
-   ```
-
-5. **Create database tables**
-   ```bash
-   python create_tables.py
-   ```
-
-6. **Run the API** *(assumed entrypoint — confirm against `app/main.py`)*
-   ```bash
-   uvicorn app.main:app --reload
-   ```
-
-7. **Try the smoke-test scripts** (after seeding some data, e.g. via `test_repositories.py`)
-   ```bash
-   python test_repositories.py
-   python test_recommendation_pipeline.py
-   python test_recommendation_service.py
-   ```
-
----
-
+- The frontend (`app/templates`, `app/static`, `app/web/routes.py`) is out of scope for this document.
+- The AI gateway abstraction (`app/gateway/`) supports multiple providers, but this project currently runs against a fine-tuned **Llama 3.1** model served via **Ollama**.
